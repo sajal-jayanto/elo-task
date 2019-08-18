@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <meta http-equiv="X-UA-Compatible" content="ie=edge">
+        <title>Programming Task</title>
+
+        <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css" integrity="sha384-Gn5384xqQ1aoWXA+058RXPxPg6fy4IWvTNh0E263XmFcJlSAwiGgFAW/dAiS6JXm" crossorigin="anonymous">
+        <script src="https://kit.fontawesome.com/73ee14ff38.js"></script>
+        <link rel="stylesheet" href="styles.css">
+
+        <!-- template for the modal component -->
+        <script type="text/x-template" id="modal-template">
+            <transition name="modal">
+                <div class="modal-mask">
+                    <div class="modal-wrapper">
+                        <div class="modal-container">
+                            <div class="modal-header">
+                                <slot name="header">
+                                    
+                                </slot>
+                            </div>
+                
+                            <div class="modal-body">
+                                <slot name="bodys">
+                                   
+                                </slot>
+                            </div>
+                
+                            <div class="modal-footer text-center">
+                                <slot name="footer">
+                                    <button class="modal-default-button " @click="$emit('close')"> OK </button>
+                                </slot>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </transition>
+        </script>
+
+    </head>
+    <body>
+    
+        <nav class="navbar navbar-dark bg-primary">
+            <span class="navbar-brand mb-0 h1"> Programming Task</span>
+        </nav>
+
+        
+        <div id="app">
+            <div class="container">
+                <div class="row">
+                    <div class="col-9 mt-2">
+                    </div>
+                    <div class="col-3 mt-2">
+                        <div class="card text-center">
+                            <div class="card-header">  
+                                <h5>Cash</h5>
+                                <hr class="bg-info">
+                                <h6>${{Cash}}</h6>  
+                            </div>
+                            <button type="button" class="btn btn-primary mt-1" @click=addcash>Add cash</button>
+                        </div>
+                    </div>
+                </div>
+                <hr class="bg-info">
+
+                <modal v-if="showModal" @close="showModal = false">
+                    <h3 slot="header">{{messhead}}</h3>
+                    <p slot="bodys">{{messbody}}</p>
+                </modal>
+
+                
+                <h3 class="text-center">Buy Item</h3>
+                <hr class="bg-info">
+                <div>
+                    <table class="table table-bordered text-center">
+                        <thead class="thead-light">
+                            <tr class="">
+                            <th scope="col">Ingredients</th>
+                            <th scope="col">Current Stock</th>
+                            <th scope="col">Cost</th>
+                            <th scope="col">Action</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr v-for="(item , index) in Ingredients">
+                                <td>{{item.Ingredient}}</td>
+                                <td>{{item.stock}}</td>
+                                <td>{{item.cost}}</td>
+                                <td> <button type="button" @click="buy(index , item.id , item.cost)" class="btn btn-primary btn-lg btn-block">BUY</button> </td>
+                            <tr>
+                        </tbody>
+                    </table>
+                </div>
+                <hr class="bg-info">
+                    <h3 class="text-center">Sell Product</h3>
+                <hr class="bg-info">
+                <div >
+                    <table class="table table-bordered text-center">
+                        <thead class="thead-light">
+                            <tr>
+                                <th scope="col">Item</th>
+                                <th scope="col">Recipe</th>
+                                <th scope="col">Selling Price</th>
+                                <th scope="col">Action</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr v-for="item in SellItem">
+                                <td>{{item.item}}</td>
+                                <td> 
+                                    <p v-for="ingredient in item.recipe"> 
+                                        {{ingredient.ingredient}}({{ingredient.ingredients_cnt}})    
+                                    </p>
+                                </td>
+                                <td>{{item.price}}</td>
+                                <td> <button type="button" @click="sell(item.recipe , item.price)" class="btn btn-primary btn-lg btn-block">SELL</button> </td>
+                            <tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/axios/0.19.0/axios.min.js"> </script>
+        <script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+        <script>
+
+            Vue.component('modal', {
+                template: '#modal-template'
+            })
+            var app = new Vue({
+                el : '#app',
+                data:{
+                    messhead: '',
+                    messbody : '',
+                    Cansell : true,
+                    showModal: false,
+                    Cash : 0,
+                    Ingredients : [],
+                    SellItem : [],
+                },
+                methods: {
+                    getCash(){
+                        axios.get("http://localhost/Programming-task-elo/process.php?action=cash").then( function (response) {
+                            if(response.data.error){
+                                app.errorMsg = true;
+                            }
+                            else {        
+                                app.Cash = response.data.temps.cash;
+                            }
+                        });
+                    },
+                    getAllIngredients(){
+                        axios.get("http://localhost/Programming-task-elo/process.php?action=read").then( function(response){
+                            if(response.data.error){
+                                app.errorMsg = true;
+                            }
+                            else {        
+                                app.Ingredients = response.data.temps;
+                            }
+                        });
+                    },
+                    buy(index , id , cost){
+                        if(Number(app.Cash) - Number(cost) >= 0){
+                            app.Cash = Number(app.Cash) - Number(cost);
+                            app.Ingredients[index].stock = Number(app.Ingredients[index].stock) + Number("1");
+                            axios.get("http://localhost/Programming-task-elo/process.php?action=change&&cash="+app.Cash+"&&id="+id+"&&count="+app.Ingredients[index].stock).then();
+                        }                     
+                        else{
+                            app.messhead = "Warning";
+                            app.messbody = "You don't have anough cash to buy " + app.Ingredients[index].Ingredient;
+                            app.showModal = true;
+                        }  
+                    },
+                    sell(items , price){
+                        app.Cansell = true;
+                        app.messbody = '';
+                        items.forEach(item => {
+                            app.Ingredients.forEach(each => {
+                                if(each.Ingredient == item.ingredient){
+                                    if(item.ingredients_cnt > each.stock){
+                                        if(app.Cansell == true) app.messbody += " " + each.Ingredient;
+                                        else app.messbody += "," + each.Ingredient;
+                                        app.Cansell = false;
+                                    }
+                                }
+                            });
+                        });
+
+                        if(app.Cansell == false){
+                            app.messhead = "Warning";
+                            app.showModal = true;
+                            app.messbody = "Place Buy Some" + app.messbody;
+                        }
+                        else {
+                            items.forEach(item => {
+                                app.Ingredients.forEach(each => {
+                                    if(each.Ingredient == item.ingredient){
+                                        each.stock = Number(each.stock) - Number(item.ingredients_cnt);
+                                        axios.get("http://localhost/Programming-task-elo/process.php?action=change&&id="+each.id+"&&count="+each.stock).then();
+                                    }
+                                });
+                            });
+                            app.Cash = Number(app.Cash) + Number(price);
+                            axios.get("http://localhost/Programming-task-elo/process.php?action=change&&cash="+app.Cash).then();
+                        }
+
+
+                    },
+                    getAllBuyItem(){
+                        axios.get("http://localhost/Programming-task-elo/process.php?action=list").then( function(response){
+                            if(response.data.error){
+                                app.errorMsg = true;
+                            }
+                            else {        
+                                app.SellItem = response.data.temps;
+                            }
+                        });
+                    },
+                    addcash(){
+                        app.Cash = Number(app.Cash) + Number('100');
+                        axios.get("http://localhost/Programming-task-elo/process.php?action=change&&cash="+app.Cash).then();
+                    },
+                },
+                beforeMount(){
+                    this.getCash();
+                    this.getAllIngredients();
+                    this.getAllBuyItem();
+                }
+            });
+
+        </script>
+    </body>
+</html>
