@@ -1,3 +1,3 @@
 # elo-task
 
-### Use php HTML , PHP , VUEJS 
+### HTML , PHP , VUEJS 
